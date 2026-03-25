@@ -3,82 +3,91 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FE.MA. Consulting</title>
-  <link rel="stylesheet" href="/style.css" />
+  <title>FE.MA. Consulting - Assistente Virtuale</title>
+  <meta
+    name="description"
+    content="Assistente virtuale FE.MA. Consulting per un primo orientamento su Patent Box e crediti d’imposta."
+  />
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <main class="page">
-    <section class="hero">
-      <span class="eyebrow">Starter riutilizzabile</span>
-      <h1>Bot web per PMI: lead + assistenza base</h1>
-      <p class="subtitle">
-        Questa è una base custom che puoi usare per FE.MA. e poi adattare ad altri clienti.
-      </p>
+    <section class="chat-section">
+      <div class="chat-widget">
+        <div class="chat-header">
+          <div class="chat-header-title">FE.MA. Consulting</div>
+          <div class="chat-header-subtitle">Assistente virtuale</div>
+        </div>
 
-      <div class="card-grid">
-        <article class="info-card">
-          <h2>Cosa fa</h2>
-          <ul>
-            <li>Accoglie il visitatore</li>
-            <li>Risponde alle domande iniziali</li>
-            <li>Raccoglie richieste di contatto</li>
-          </ul>
-        </article>
+        <div id="chat-body" class="chat-body"></div>
 
-        <article class="info-card">
-          <h2>Per chi è utile</h2>
-          <ul>
-            <li>PMI</li>
-            <li>Studi professionali</li>
-            <li>Consulenti</li>
-          </ul>
-        </article>
+        <div id="quick-actions" class="quick-actions"></div>
+
+        <form id="chat-form" class="chat-form">
+          <input
+            type="text"
+            id="chat-input"
+            placeholder="Scrivi qui il tuo messaggio..."
+            autocomplete="off"
+          />
+          <button type="submit">Invia</button>
+        </form>
+      </div>
+    </section>
+
+    <section class="lead-section">
+      <div class="lead-box">
+        <h2>Richiedi una verifica preliminare</h2>
+        <p>
+          Se preferisci, puoi lasciare qui i tuoi dati per essere ricontattato.
+        </p>
+
+        <form id="lead-form">
+          <input
+            type="text"
+            id="lead-nome"
+            name="nome"
+            placeholder="Nome"
+            required
+          />
+
+          <input
+            type="text"
+            id="lead-azienda"
+            name="azienda"
+            placeholder="Azienda"
+            required
+          />
+
+          <input
+            type="email"
+            id="lead-email"
+            name="email"
+            placeholder="Email"
+            required
+          />
+
+          <input
+            type="text"
+            id="lead-telefono"
+            name="telefono"
+            placeholder="Telefono (facoltativo)"
+          />
+
+          <textarea
+            id="lead-note"
+            name="note"
+            placeholder="Breve descrizione del caso"
+          ></textarea>
+
+          <button type="submit">Invia richiesta</button>
+        </form>
+
+        <div id="lead-response"></div>
       </div>
     </section>
   </main>
 
-  <button id="chatToggle" class="chat-toggle">💬</button>
-
-  <section id="chatWidget" class="chat-widget hidden">
-    <header class="chat-header">
-      <div>
-        <strong id="brandName">FE.MA. Consulting</strong>
-        <p>Lead + assistenza iniziale</p>
-      </div>
-      <button id="chatClose" class="icon-btn" type="button">×</button>
-    </header>
-
-    <div id="chatMessages" class="chat-messages"></div>
-
-    <div id="quickActions" class="quick-actions">
-      <button type="button" data-action="Verificare agevolazioni">Verificare agevolazioni</button>
-      <button type="button" data-action="Informazioni sui servizi">Informazioni sui servizi</button>
-      <button type="button" data-action="Essere ricontattato">Essere ricontattato</button>
-    </div>
-
-    <form id="chatForm" class="chat-form">
-      <input id="chatInput" type="text" placeholder="Scrivi qui..." />
-      <button type="submit">Invia</button>
-    </form>
-
-    <form id="leadForm" class="lead-form hidden">
-      <h3>Richiedi ricontatto</h3>
-      <input name="name" type="text" placeholder="Nome e cognome" />
-      <input name="company" type="text" placeholder="Azienda" />
-      <input name="email" type="email" placeholder="Email" />
-      <input name="phone" type="text" placeholder="Telefono" />
-      <input name="companyType" type="text" placeholder="Tipo impresa / settore" />
-      <textarea name="notes" placeholder="Messaggio" rows="4"></textarea>
-
-      <label class="checkbox-row">
-        <input name="wantsCallback" type="checkbox" />
-        Desidero essere ricontattato
-      </label>
-
-      <button type="submit">Invia richiesta</button>
-    </form>
-  </section>
-
-  <script src="/widget.js"></script>
+  <script src="widget.js"></script>
 </body>
 </html>
