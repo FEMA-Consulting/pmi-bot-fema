@@ -171,11 +171,13 @@ if (leadForm) {
 
       const data = await response.json();
 
-      if (data.success) {
-        if (leadResponse) {
-          leadResponse.innerText = "Richiesta inviata correttamente.";
-        }
-        leadForm.reset();
+if (data.success) {
+  if (leadResponse) {
+    leadResponse.innerText =
+      "Grazie, la tua richiesta è stata inviata correttamente. Un nostro consulente la esaminerà con attenzione e ti contatteremo nel più breve tempo possibile per un primo riscontro.";
+  }
+  leadForm.reset();
+}
       } else {
         if (leadResponse) {
           leadResponse.innerText = "Errore durante l'invio della richiesta.";
