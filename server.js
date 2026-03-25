@@ -1,9 +1,12 @@
-require("dotenv").config();
-const express = require("express");
-const path = require("path");
-const fs = require("fs");
-const OpenAI = require("openai");
-const systemPrompt = require("./prompts/systemPrompt");
+import dotenv from "dotenv";
+dotenv.config();
+
+import express from "express";
+import path from "path";
+import fs from "fs";
+import { fileURLToPath } from "url";
+import OpenAI from "openai";
+import systemPrompt from "./prompts/systemPrompt.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -12,17 +15,21 @@ const client = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
 const leadsFilePath = path.join(__dirname, "data", "leads.json");
 
-// Crea cartella/file leads se non esistono
 function ensureLeadsFile() {
   const dataDir = path.join(__dirname, "data");
+
   if (!fs.existsSync(dataDir)) {
     fs.mkdirSync(dataDir, { recursive: true });
   }
+
   if (!fs.existsSync(leadsFilePath)) {
     fs.writeFileSync(leadsFilePath, "[]", "utf8");
   }
@@ -62,7 +69,6 @@ Aiutalo a capire se parlare di Patent Box, crediti d’imposta o richiesta di co
   }
 }
 
-// Endpoint chat
 app.post("/api/chat", async (req, res) => {
   try {
     const { message, intent, history = [] } = req.body;
@@ -83,17 +89,20 @@ app.post("/api/chat", async (req, res) => {
       max_tokens: 350,
     });
 
-    const reply = response.choices?.[0]?.message?.content || "Si è verificato un problema nella risposta.";
+    const reply =
+      response.choices?.[0]?.message?.content ||
+      "Si è verificato un problema nella risposta.";
+
     res.json({ reply });
   } catch (error) {
     console.error("Errore /api/chat:", error);
     res.status(500).json({
-      reply: "Si è verificato un errore temporaneo. Puoi riprovare tra poco oppure scrivere a contatti@fe-ma.info",
+      reply:
+        "Si è verificato un errore temporaneo. Puoi riprovare tra poco oppure scrivere a contatti@fe-ma.info",
     });
   }
 });
 
-// Endpoint salvataggio lead
 app.post("/api/lead", (req, res) => {
   try {
     const {
@@ -124,11 +133,13 @@ app.post("/api/lead", (req, res) => {
     res.json({ success: true, message: "Lead salvato correttamente." });
   } catch (error) {
     console.error("Errore /api/lead:", error);
-    res.status(500).json({ success: false, message: "Errore durante il salvataggio del lead." });
+    res.status(500).json({
+      success: false,
+      message: "Errore durante il salvataggio del lead.",
+    });
   }
 });
 
-// Fallback homepage
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
