@@ -8,6 +8,11 @@ const quickActions = document.getElementById("quick-actions");
 const leadForm = document.getElementById("lead-form");
 const leadResponse = document.getElementById("lead-response");
 
+function scrollChatToBottom() {
+  if (!chatBody) return;
+  chatBody.scrollTop = chatBody.scrollHeight;
+}
+
 function addMessage(text, sender = "bot") {
   if (!chatBody) return;
 
@@ -15,7 +20,7 @@ function addMessage(text, sender = "bot") {
   msg.className = `message ${sender}`;
   msg.innerText = text;
   chatBody.appendChild(msg);
-  chatBody.scrollTop = chatBody.scrollHeight;
+  scrollChatToBottom();
 }
 
 function addQuickButtons(buttons) {
@@ -32,6 +37,7 @@ function addQuickButtons(buttons) {
     button.addEventListener("click", async () => {
       currentIntent = btn.intent;
       quickActions.innerHTML = "";
+      addMessage(btn.label, "user");
       await handleInitialIntent(btn.intent);
     });
 
@@ -60,36 +66,36 @@ async function sendMessage(message, showUserMessage = true) {
     });
 
     const data = await response.json();
-    const reply = data.reply || "Si è verificato un problema nella risposta.";
+    const reply =
+      data.reply || "Si è verificato un problema nella risposta.";
 
     addMessage(reply, "bot");
     chatHistory.push({ role: "assistant", content: reply });
   } catch (error) {
-    addMessage("Errore temporaneo. Scrivi a contatti@fe-ma.info", "bot");
+    addMessage(
+      "Errore temporaneo. Scrivi a contatti@fe-ma.info",
+      "bot"
+    );
   }
 }
 
 async function handleInitialIntent(intent) {
   if (intent === "patent_box") {
-    addMessage("Patent Box", "user");
     await sendMessage(
       "Vorrei capire se la mia azienda può avere opportunità con il Patent Box.",
       false
     );
   } else if (intent === "crediti_imposta") {
-    addMessage("Crediti d’imposta", "user");
     await sendMessage(
       "Vorrei capire se la mia azienda può avere accesso a crediti d’imposta.",
       false
     );
   } else if (intent === "verifica_caso") {
-    addMessage("Non so quale agevolazione è adatta", "user");
     await sendMessage(
       "Non so quale agevolazione sia più adatta al mio caso.",
       false
     );
   } else if (intent === "contatto_consulente") {
-    addMessage("Parlare con un consulente", "user");
     await sendMessage(
       "Vorrei essere ricontattato da un consulente.",
       false
