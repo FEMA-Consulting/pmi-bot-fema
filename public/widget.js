@@ -73,7 +73,7 @@ async function sendMessage(message, showUserMessage = true) {
     chatHistory.push({ role: "assistant", content: reply });
   } catch (error) {
     addMessage(
-      "Errore temporaneo. Scrivi a contatti@fe-ma.info",
+      "Si è verificato un errore temporaneo. Puoi riprovare tra poco oppure scrivere a contatti@fe-ma.info",
       "bot"
     );
   }
@@ -146,7 +146,7 @@ if (leadForm) {
 
     if (!nome || !azienda || !email) {
       if (leadResponse) {
-        leadResponse.innerText = "Compila almeno nome, azienda ed email.";
+        leadResponse.textContent = "Compila almeno nome, azienda ed email.";
       }
       return;
     }
@@ -171,21 +171,22 @@ if (leadForm) {
 
       const data = await response.json();
 
-if (data.success) {
-  if (leadResponse) {
-    leadResponse.innerText =
-      "Grazie, la tua richiesta è stata inviata correttamente. Un nostro consulente la esaminerà con attenzione e ti contatteremo nel più breve tempo possibile per un primo riscontro.";
-  }
-  leadForm.reset();
-}
+      if (data.success) {
+        if (leadResponse) {
+          leadResponse.textContent =
+            "Grazie, la tua richiesta è stata inviata correttamente. Un nostro consulente la esaminerà con attenzione e ti contatteremo nel più breve tempo possibile per un primo riscontro.";
+        }
+        leadForm.reset();
       } else {
         if (leadResponse) {
-          leadResponse.innerText = "Errore durante l'invio della richiesta.";
+          leadResponse.textContent =
+            "Si è verificato un problema durante l'invio della richiesta. Ti invitiamo a riprovare tra poco.";
         }
       }
     } catch (error) {
       if (leadResponse) {
-        leadResponse.innerText = "Errore temporaneo durante l'invio.";
+        leadResponse.textContent =
+          "Si è verificato un errore temporaneo durante l'invio. Ti invitiamo a riprovare tra poco.";
       }
     }
   });
