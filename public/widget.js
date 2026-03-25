@@ -1,162 +1,137 @@
-const chatToggle = document.getElementById('chatToggle');
-const chatWidget = document.getElementById('chatWidget');
-const chatClose = document.getElementById('chatClose');
-const chatMessages = document.getElementById('chatMessages');
-const chatForm = document.getElementById('chatForm');
-const chatInput = document.getElementById('chatInput');
-const quickActions = document.getElementById('quickActions');
-const leadForm = document.getElementById('leadForm');
-const brandName = document.getElementById('brandName');
+let currentIntent = "";
+let chatHistory = [];
 
-const state = {
-  messages: [],
-  brandName: 'Assistente',
-  leadFormOpen: false
-};
+const chatBody = document.getElementById("chat-body");
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+const quickActions = document.getElementById("quick-actions");
 
-function addMessage(role, text) {
-  const div = document.createElement('div');
-  div.className = `message ${role}`;
-  div.textContent = text;
-  chatMessages.appendChild(div);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
-  state.messages.push({ role, content: text });
+function addMessage(text, sender = "bot") {
+  const msg = document.createElement("div");
+  msg.className = `message ${sender}`;
+  msg.innerText = text;
+  chatBody.appendChild(msg);
+  chatBody.scrollTop = chatBody.scrollHeight;
 }
 
-function addSystemNote(text) {
-  const note = document.createElement('div');
-  note.className = 'system-note';
-  note.textContent = text;
-  chatMessages.appendChild(note);
-  chatMessages.scrollTop = chatMessages.scrollHeight;
+function addQuickButtons(buttons) {
+  quickActions.innerHTML = "";
+
+  buttons.forEach((btn) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "quick-btn";
+    button.innerText = btn.label;
+    button.addEventListener("click", () => {
+      currentIntent = btn.intent;
+      addMessage(btn.label, "user");
+      quickActions.innerHTML = "";
+      handleInitialIntent(btn.intent);
+    });
+    quickActions.appendChild(button);
+  });
 }
 
-function toggleLeadForm(show = true) {
-  state.leadFormOpen = show;
-  leadForm.classList.toggle('hidden', !show);
-}
+async function sendMessage(message) {
+  addMessage(message, "user");
 
-async function loadConfig() {
-  try {
-    const response = await fetch('/api/config');
-    const data = await response.json();
-    state.brandName = data.brandName || state.brandName;
-    brandName.textContent = state.brandName;
-  } catch {
-    brandName.textContent = state.brandName;
-  }
-}
-
-async function askBot(text) {
-  addMessage('user', text);
+  chatHistory.push({ role: "user", content: message });
 
   try {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messages: state.messages })
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        intent: currentIntent,
+        history: chatHistory.slice(-8),
+      }),
     });
 
     const data = await response.json();
-    if (!response.ok || !data.ok) {
-      throw new Error(data.error || 'Errore chat');
-    }
-
-    addMessage('assistant', data.reply || 'Nessuna risposta disponibile.');
-
-    if (/ricontatt|lascia i dati|contatto/i.test(data.reply || '')) {
-      toggleLeadForm(true);
-    }
+    addMessage(data.reply, "bot");
+    chatHistory.push({ role: "assistant", content: data.reply });
   } catch (error) {
-    console.error('Errore chat:', error);
-    addMessage(
-      'assistant',
-      'C\'è stato un problema tecnico. Puoi comunque lasciare i tuoi dati qui sotto e verrai ricontattato.'
-    );
-    toggleLeadForm(true);
+    addMessage("Errore temporaneo. Scrivi a contatti@fe-ma.info", "bot");
   }
 }
 
-chatToggle.addEventListener('click', () => {
-  chatWidget.classList.remove('hidden');
-  chatToggle.classList.add('hidden');
-
-  if (state.messages.length === 0) {
-    addMessage(
-  	'assistant',
- 	 `Ciao 👋  
-	Ti aiuto a capire in 2 minuti se la tua azienda può ottenere benefici fiscali (Patent Box, crediti d’imposta, ecc.).
-
-	Hai sviluppato software, processi o soluzioni innovative negli ultimi anni?`
-	);
+async function handleInitialIntent(intent) {
+  if (intent === "patent_box") {
+    await sendMessage("Vorrei capire se la mia azienda può avere opportunità con il Patent Box.");
+  } else if (intent === "crediti_imposta") {
+    await sendMessage("Vorrei capire se la mia azienda può avere accesso a crediti d’imposta.");
+  } else if (intent === "verifica_caso") {
+    await sendMessage("Non so quale agevolazione sia più adatta al mio caso.");
+  } else if (intent === "contatto_consulente") {
+    await sendMessage("Vorrei essere ricontattato da un consulente.");
   }
-});
-
-chatClose.addEventListener('click', () => {
-  chatWidget.classList.add('hidden');
-  chatToggle.classList.remove('hidden');
-});
-
-quickActions.addEventListener('click', (event) => {
-  const button = event.target.closest('button[data-action]');
-  if (!button) return;
-
-  const action = button.dataset.action;
-if (action === "Verificare agevolazioni") {
-  askBot("Voglio verificare se la mia azienda può ottenere agevolazioni fiscali");
-} else if (action === "Informazioni sui servizi") {
-  askBot("Voglio capire meglio i vostri servizi e le opportunità disponibili");
-} else if (action === "Essere ricontattato") {
-  askBot("Voglio essere ricontattato da un consulente FE.MA.");
-} else {
-  askBot(action);
 }
 
-  if (action === 'Essere ricontattato') {
-    toggleLeadForm(true);
-  }
+chatForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const message = chatInput.value.trim();
+  if (!message) return;
+
+  chatInput.value = "";
+  await sendMessage(message);
 });
 
-chatForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const text = chatInput.value.trim();
-  if (!text) return;
-  chatInput.value = '';
-  await askBot(text);
-});
+function initChat() {
+  addMessage(
+    "Ciao 👋 Posso aiutarti a capire in pochi minuti se la tua azienda potrebbe accedere a Patent Box o crediti d’imposta."
+  );
 
-leadForm.addEventListener('submit', async (event) => {
-  event.preventDefault();
-  const formData = new FormData(leadForm);
-  const payload = Object.fromEntries(formData.entries());
-  payload.wantsCallback = formData.get('wantsCallback') === 'on';
-  payload.interest = state.messages
-    .map((m) => `${m.role}: ${m.content}`)
-    .join(' | ')
-    .slice(0, 1500);
+  addMessage("Scegli pure da dove vuoi partire 👇");
 
-  try {
-    const response = await fetch('/api/lead', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-    const data = await response.json();
-    if (!response.ok || !data.ok) throw new Error(data.error || 'Errore invio lead');
+  addQuickButtons([
+    { label: "Patent Box", intent: "patent_box" },
+    { label: "Crediti d’imposta", intent: "crediti_imposta" },
+    { label: "Non so quale agevolazione è adatta", intent: "verifica_caso" },
+    { label: "Parlare con un consulente", intent: "contatto_consulente" },
+  ]);
+}
 
-    addMessage(
-      'assistant',
-      `Perfetto, richiesta registrata. Classificazione lead: ${data.lead.band} (score ${data.lead.score}). Verrai ricontattato al più presto.`
-    );
-    leadForm.reset();
-    toggleLeadForm(false);
-  } catch (error) {
-    console.error('Errore lead:', error);
-    addMessage(
-      'assistant',
-      'Non sono riuscito a salvare il contatto. Controlla il server oppure invia la richiesta via email.'
-    );
-  }
-});
+initChat();
 
-loadConfig();
+const leadForm = document.getElementById("lead-form");
+const leadResponse = document.getElementById("lead-response");
+
+if (leadForm) {
+  leadForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const payload = {
+      nome: document.getElementById("lead-nome").value.trim(),
+      azienda: document.getElementById("lead-azienda").value.trim(),
+      email: document.getElementById("lead-email").value.trim(),
+      telefono: document.getElementById("lead-telefono").value.trim(),
+      interesse: currentIntent || "non_specificato",
+      note: document.getElementById("lead-note").value.trim(),
+    };
+
+    try {
+      const response = await fetch("/api/lead", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        leadResponse.innerText = "Richiesta inviata correttamente.";
+        leadForm.reset();
+      } else {
+        leadResponse.innerText = "Errore durante l'invio della richiesta.";
+      }
+    } catch (error) {
+      leadResponse.innerText = "Errore temporaneo durante l'invio.";
+    }
+  });
+}
