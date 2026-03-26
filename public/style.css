@@ -33,6 +33,7 @@ body {
   flex: 1;
   width: 100%;
   display: flex;
+  min-height: 0;
 }
 
 .chat-widget {
@@ -44,6 +45,7 @@ body {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
 }
 
 .chat-header {
