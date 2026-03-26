@@ -90,9 +90,14 @@ async function handleInitialIntent(intent) {
       "Vorrei capire se la mia azienda può avere accesso a crediti d’imposta.",
       false
     );
+  } else if (intent === "software_su_misura") {
+    await sendMessage(
+      "Vorrei capire se per la mia azienda può essere utile valutare un software su misura.",
+      false
+    );
   } else if (intent === "verifica_caso") {
     await sendMessage(
-      "Non so quale agevolazione sia più adatta al mio caso.",
+      "Non so quale soluzione sia più adatta al mio caso.",
       false
     );
   } else if (intent === "contatto_consulente") {
@@ -119,7 +124,7 @@ if (chatForm) {
 
 function initChat() {
   addMessage(
-    "Ciao 👋 Posso aiutarti a capire in pochi minuti se la tua azienda potrebbe accedere a Patent Box o crediti d’imposta."
+    "Ciao 👋 Posso aiutarti a capire in pochi minuti se la tua azienda potrebbe accedere a Patent Box o crediti d’imposta, oppure se può essere utile valutare un software su misura per le tue esigenze."
   );
 
   addMessage("Scegli pure da dove vuoi partire 👇");
@@ -127,7 +132,8 @@ function initChat() {
   addQuickButtons([
     { label: "Patent Box", intent: "patent_box" },
     { label: "Crediti d’imposta", intent: "crediti_imposta" },
-    { label: "Non so quale agevolazione è adatta", intent: "verifica_caso" },
+    { label: "Software su misura", intent: "software_su_misura" },
+    { label: "Non so quale soluzione è adatta", intent: "verifica_caso" },
     { label: "Parlare con un consulente", intent: "contatto_consulente" },
   ]);
 }
