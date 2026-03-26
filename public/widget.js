@@ -1,111 +1,245 @@
-const chatBody = document.getElementById("chat-body");
-const form = document.getElementById("chat-form");
-const input = document.getElementById("chat-input");
+let currentIntent = "";
+let chatHistory = [];
 
-function scrollToBottom() {
-  setTimeout(() => {
-    chatBody.scrollTop = chatBody.scrollHeight;
-  }, 100);
+const chatBody = document.getElementById("chat-body");
+const chatForm = document.getElementById("chat-form");
+const chatInput = document.getElementById("chat-input");
+const quickActions = document.getElementById("quick-actions");
+const leadForm = document.getElementById("lead-form");
+const leadResponse = document.getElementById("lead-response");
+
+function scrollChatToBottom() {
+  if (!chatBody) return;
+  chatBody.scrollTop = chatBody.scrollHeight;
 }
 
 function addMessage(text, sender = "bot") {
+  if (!chatBody) return;
+
   const msg = document.createElement("div");
   msg.className = `message ${sender}`;
   msg.innerText = text;
   chatBody.appendChild(msg);
-  scrollToBottom();
+  scrollChatToBottom();
 }
 
-// === RISPOSTA BOT SEMPLICE ===
-function botReply(userText) {
-  addMessage("Grazie! Sto elaborando la tua richiesta...");
+function addQuickButtons(buttons) {
+  if (!quickActions) return;
 
-  setTimeout(() => {
-    addMessage(
-      "Posso aiutarti a verificare se puoi accedere al Patent Box, ai crediti d’imposta oppure valutare un software su misura sviluppato con Biemme Informatica."
-    );
-  }, 800);
-}
+  quickActions.innerHTML = "";
 
-// === INVIO LEAD (EMAIL) ===
-function sendLead(data) {
-  fetch("https://formsubmit.co/ajax/contatti@fe-ma.info", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json"
-    },
-    body: JSON.stringify({
-      Nome: data.nome,
-      Cognome: data.cognome,
-      Azienda: data.azienda,
-      Email: data.email,
-      Messaggio: data.messaggio || "Richiesta da chatbot FE.MA."
-    })
-  })
-    .then(response => response.json())
-    .then(() => {
-      addMessage(
-        "✅ Richiesta inviata correttamente!\nUn nostro consulente analizzerà la tua situazione e ti contatterà nel più breve tempo possibile."
-      );
-    })
-    .catch(() => {
-      addMessage("❌ Errore nell'invio. Riprova tra qualche minuto.");
+  buttons.forEach((btn) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "quick-btn";
+    button.innerText = btn.label;
+
+    button.addEventListener("click", async () => {
+      currentIntent = btn.intent;
+      quickActions.innerHTML = "";
+      addMessage(btn.label, "user");
+      await handleInitialIntent(btn.intent);
+      addResetButton();
     });
+
+    quickActions.appendChild(button);
+  });
 }
 
-// === GESTIONE FORM CHAT ===
-form.addEventListener("submit", function (e) {
-  e.preventDefault();
+function addResetButton() {
+  if (!quickActions) return;
 
-  const text = input.value.trim();
-  if (!text) return;
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "quick-btn";
+  resetBtn.innerText = "🔄 Ricomincia";
 
-  addMessage(text, "user");
-  input.value = "";
-
-  botReply(text);
-});
-
-// === QUICK BUTTONS ===
-document.querySelectorAll(".quick-btn").forEach(btn => {
-  btn.addEventListener("click", () => {
-    const text = btn.innerText;
-    addMessage(text, "user");
-    botReply(text);
+  resetBtn.addEventListener("click", () => {
+    resetChat();
   });
-});
 
-// === LEAD FORM (se presente) ===
-const leadForm = document.getElementById("lead-form");
+  quickActions.appendChild(resetBtn);
+}
 
-if (leadForm) {
-  leadForm.addEventListener("submit", function (e) {
+function resetChat() {
+  currentIntent = "";
+  chatHistory = [];
+
+  if (chatBody) {
+    chatBody.innerHTML = "";
+  }
+
+  if (quickActions) {
+    quickActions.innerHTML = "";
+  }
+
+  if (chatInput) {
+    chatInput.value = "";
+  }
+
+  initChat();
+}
+
+async function sendMessage(message, showUserMessage = true) {
+  if (showUserMessage) {
+    addMessage(message, "user");
+  }
+
+  chatHistory.push({ role: "user", content: message });
+
+  try {
+    const response = await fetch("/api/chat", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        message,
+        intent: currentIntent,
+        history: chatHistory.slice(-8),
+      }),
+    });
+
+    const data = await response.json();
+    const reply =
+      data.reply || "Si è verificato un problema nella risposta.";
+
+    addMessage(reply, "bot");
+    chatHistory.push({ role: "assistant", content: reply });
+  } catch (error) {
+    addMessage(
+      "Si è verificato un errore temporaneo. Puoi riprovare tra poco oppure scrivere a contatti@fe-ma.info",
+      "bot"
+    );
+  }
+}
+
+async function handleInitialIntent(intent) {
+  if (intent === "patent_box") {
+    await sendMessage(
+      "Vorrei capire se la mia azienda può avere opportunità con il Patent Box.",
+      false
+    );
+  } else if (intent === "crediti_imposta") {
+    await sendMessage(
+      "Vorrei capire se la mia azienda può avere accesso a crediti d’imposta.",
+      false
+    );
+  } else if (intent === "software_su_misura") {
+    await sendMessage(
+      "Vorrei capire se per la mia azienda può essere utile valutare un software su misura.",
+      false
+    );
+  } else if (intent === "verifica_caso") {
+    await sendMessage(
+      "Non so quale soluzione sia più adatta al mio caso.",
+      false
+    );
+  } else if (intent === "contatto_consulente") {
+    await sendMessage(
+      "Vorrei essere ricontattato da un consulente.",
+      false
+    );
+  }
+}
+
+if (chatForm) {
+  chatForm.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    const data = {
-      nome: document.getElementById("nome").value,
-      cognome: document.getElementById("cognome").value,
-      azienda: document.getElementById("azienda").value,
-      email: document.getElementById("email").value,
-      messaggio: document.getElementById("messaggio").value
-    };
+    if (!chatInput) return;
 
-    sendLead(data);
+    const message = chatInput.value.trim();
+    if (!message) return;
 
-    leadForm.reset();
+    chatInput.value = "";
+    await sendMessage(message);
   });
 }
 
-// === RESET CHAT ===
-const resetBtn = document.getElementById("reset-chat");
+function initChat() {
+  addMessage(
+    "Ciao 👋 Posso aiutarti a capire in pochi minuti se la tua azienda potrebbe accedere a Patent Box o crediti d’imposta, oppure se può essere utile valutare un software su misura per le tue esigenze."
+  );
 
-if (resetBtn) {
-  resetBtn.addEventListener("click", () => {
-    chatBody.innerHTML = "";
+  addMessage("Scegli pure da dove vuoi partire 👇");
 
-    addMessage("Ciao 👋 Posso aiutarti a capire se la tua azienda può accedere a Patent Box, crediti d’imposta o software su misura.");
+  addQuickButtons([
+    { label: "Patent Box", intent: "patent_box" },
+    { label: "Crediti d’imposta", intent: "crediti_imposta" },
+    { label: "Software su misura", intent: "software_su_misura" },
+    { label: "Non so quale soluzione è adatta", intent: "verifica_caso" },
+    { label: "Parlare con un consulente", intent: "contatto_consulente" },
+  ]);
 
-    scrollToBottom();
+  addResetButton();
+}
+
+initChat();
+
+if (leadForm) {
+  leadForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const nome = document.getElementById("lead-nome")?.value.trim() || "";
+    const azienda = document.getElementById("lead-azienda")?.value.trim() || "";
+    const email = document.getElementById("lead-email")?.value.trim() || "";
+    const telefono = document.getElementById("lead-telefono")?.value.trim() || "";
+    const note = document.getElementById("lead-note")?.value.trim() || "";
+
+    if (!nome || !azienda || !email) {
+      if (leadResponse) {
+        leadResponse.textContent = "Compila almeno nome, azienda ed email.";
+      }
+      return;
+    }
+
+    const payload = {
+      nome,
+      azienda,
+      email,
+      telefono,
+      interesse: currentIntent || "non_specificato",
+      note,
+    };
+
+    try {
+      const response = await fetch("https://formsubmit.co/ajax/contatti@fe-ma.info", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify({
+          nome,
+          azienda,
+          email,
+          telefono,
+          interesse: currentIntent || "non_specificato",
+          note,
+          _subject: "Nuovo lead da chatbot FE.MA. Consulting",
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success === "true") {
+        if (leadResponse) {
+          leadResponse.textContent =
+            "Grazie, la tua richiesta è stata inviata correttamente. Un nostro consulente la esaminerà con attenzione e ti contatteremo nel più breve tempo possibile per un primo riscontro.";
+        }
+        leadForm.reset();
+      } else {
+        if (leadResponse) {
+          leadResponse.textContent =
+            "Si è verificato un problema durante l'invio della richiesta. Ti invitiamo a riprovare tra poco.";
+        }
+      }
+    } catch (error) {
+      if (leadResponse) {
+        leadResponse.textContent =
+          "Si è verificato un errore temporaneo durante l'invio. Ti invitiamo a riprovare tra poco.";
+      }
+    }
   });
 }
