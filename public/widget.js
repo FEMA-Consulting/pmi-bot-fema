@@ -39,10 +39,45 @@ function addQuickButtons(buttons) {
       quickActions.innerHTML = "";
       addMessage(btn.label, "user");
       await handleInitialIntent(btn.intent);
+      addResetButton();
     });
 
     quickActions.appendChild(button);
   });
+}
+
+function addResetButton() {
+  if (!quickActions) return;
+
+  const resetBtn = document.createElement("button");
+  resetBtn.type = "button";
+  resetBtn.className = "quick-btn";
+  resetBtn.innerText = "🔄 Ricomincia";
+
+  resetBtn.addEventListener("click", () => {
+    resetChat();
+  });
+
+  quickActions.appendChild(resetBtn);
+}
+
+function resetChat() {
+  currentIntent = "";
+  chatHistory = [];
+
+  if (chatBody) {
+    chatBody.innerHTML = "";
+  }
+
+  if (quickActions) {
+    quickActions.innerHTML = "";
+  }
+
+  if (chatInput) {
+    chatInput.value = "";
+  }
+
+  initChat();
 }
 
 async function sendMessage(message, showUserMessage = true) {
@@ -136,6 +171,8 @@ function initChat() {
     { label: "Non so quale soluzione è adatta", intent: "verifica_caso" },
     { label: "Parlare con un consulente", intent: "contatto_consulente" },
   ]);
+
+  addResetButton();
 }
 
 initChat();
