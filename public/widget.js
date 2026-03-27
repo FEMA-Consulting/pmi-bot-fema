@@ -352,3 +352,25 @@ if (leadForm) {
     }
   });
 }
+
+function showLeadForm() {
+  const chat = document.getElementById("chat");
+
+  const formHTML = `
+    <div class="lead-form">
+      <input type="text" id="lead_nome" placeholder="Nome" />
+      <input type="email" id="lead_email" placeholder="Email *" required />
+      <input type="text" id="lead_azienda" placeholder="Azienda" />
+      <textarea id="lead_messaggio" placeholder="Scrivi qui la tua richiesta..."></textarea>
+      
+      <button onclick="submitLeadForm()">Invia richiesta</button>
+    </div>
+  `;
+
+  const div = document.createElement("div");
+  div.className = "bot-message";
+  div.innerHTML = formHTML;
+
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
