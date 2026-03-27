@@ -141,7 +141,7 @@ function parseLeadFromChat(text) {
 }
 
 async function submitLeadViaFormSubmit(lead) {
-  const response = await fetch("https://formsubmit.co/ajax/contatti@fe-ma.info", {
+  const response = await fetch("https://formsubmit.co/ajax/92d01149a19c2203d62eb12dc8b866ce", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
