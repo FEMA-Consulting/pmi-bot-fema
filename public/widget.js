@@ -1,5 +1,6 @@
 let currentIntent = "";
 let chatHistory = [];
+let lastLeadSignature = "";
 
 const chatBody = document.getElementById("chat-body");
 const chatForm = document.getElementById("chat-form");
@@ -23,10 +24,15 @@ function addMessage(text, sender = "bot") {
   scrollChatToBottom();
 }
 
+function clearQuickActions() {
+  if (!quickActions) return;
+  quickActions.innerHTML = "";
+}
+
 function addQuickButtons(buttons) {
   if (!quickActions) return;
 
-  quickActions.innerHTML = "";
+  clearQuickActions();
 
   buttons.forEach((btn) => {
     const button = document.createElement("button");
@@ -36,7 +42,7 @@ function addQuickButtons(buttons) {
 
     button.addEventListener("click", async () => {
       currentIntent = btn.intent;
-      quickActions.innerHTML = "";
+      clearQuickActions();
       addMessage(btn.label, "user");
       await handleInitialIntent(btn.intent);
       addResetButton();
@@ -48,6 +54,12 @@ function addQuickButtons(buttons) {
 
 function addResetButton() {
   if (!quickActions) return;
+
+  const existingReset = Array.from(quickActions.querySelectorAll("button")).find(
+    (btn) => btn.innerText === "🔄 Ricomincia"
+  );
+
+  if (existingReset) return;
 
   const resetBtn = document.createElement("button");
   resetBtn.type = "button";
@@ -64,6 +76,7 @@ function addResetButton() {
 function resetChat() {
   currentIntent = "";
   chatHistory = [];
+  lastLeadSignature = "";
 
   if (chatBody) {
     chatBody.innerHTML = "";
@@ -80,12 +93,127 @@ function resetChat() {
   initChat();
 }
 
+function extractEmail(text) {
+  const match = text.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+  return match ? match[0].trim() : "";
+}
+
+function extractPhone(text) {
+  const match = text.match(/(\+?\d[\d\s().-]{6,}\d)/);
+  return match ? match[0].trim() : "";
+}
+
+function extractField(text, labels) {
+  for (const label of labels) {
+    const regex = new RegExp(`${label}\\s*:\\s*(.+)`, "i");
+    const match = text.match(regex);
+    if (match && match[1]) {
+      return match[1].trim();
+    }
+  }
+  return "";
+}
+
+function parseLeadFromChat(text) {
+  const email = extractEmail(text);
+  if (!email) return null;
+
+  const nome =
+    extractField(text, ["nome", "name"]) || "";
+
+  const azienda =
+    extractField(text, ["azienda", "società", "societa", "company", "impresa"]) || "";
+
+  const telefono =
+    extractField(text, ["telefono", "cellulare", "tel", "mobile"]) || extractPhone(text);
+
+  const note =
+    extractField(text, ["messaggio", "richiesta", "note"]) || text.trim();
+
+  return {
+    nome,
+    azienda,
+    email,
+    telefono,
+    interesse: currentIntent || "non_specificato",
+    note,
+  };
+}
+
+async function submitLeadViaFormSubmit(lead) {
+  const response = await fetch("https://formsubmit.co/ajax/contatti@fe-ma.info", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      _subject: "Nuovo lead da chatbot FE.MA. Consulting",
+      Nome: lead.nome || "",
+      Azienda: lead.azienda || "",
+      Email: lead.email || "",
+      Telefono: lead.telefono || "",
+      Interesse: lead.interesse || "",
+      Messaggio: lead.note || "",
+    }),
+  });
+
+  let data = {};
+  try {
+    data = await response.json();
+  } catch (e) {
+    data = {};
+  }
+
+  return { response, data };
+}
+
+async function tryCaptureLeadFromChat(message) {
+  const lead = parseLeadFromChat(message);
+  if (!lead) return false;
+
+  const signature = `${lead.email}|${lead.telefono}|${lead.note}`;
+  if (signature === lastLeadSignature) {
+    return true;
+  }
+
+  try {
+    const { response } = await submitLeadViaFormSubmit(lead);
+
+    if (response.ok) {
+      lastLeadSignature = signature;
+      addMessage(
+        "Grazie, la tua richiesta è stata inviata correttamente. Un nostro consulente la esaminerà con attenzione e ti contatteremo nel più breve tempo possibile per un primo riscontro.",
+        "bot"
+      );
+      return true;
+    }
+
+    addMessage(
+      "Ho ricevuto i tuoi dati, ma c'è stato un problema tecnico nell'invio. Ti invito a riprovare oppure a scrivere direttamente a contatti@fe-ma.info.",
+      "bot"
+    );
+    return true;
+  } catch (error) {
+    addMessage(
+      "Ho ricevuto i tuoi dati, ma si è verificato un errore temporaneo nell'invio. Ti invito a riprovare oppure a scrivere direttamente a contatti@fe-ma.info.",
+      "bot"
+    );
+    return true;
+  }
+}
+
 async function sendMessage(message, showUserMessage = true) {
   if (showUserMessage) {
     addMessage(message, "user");
   }
 
   chatHistory.push({ role: "user", content: message });
+
+  const leadCaptured = await tryCaptureLeadFromChat(message);
+  if (leadCaptured) {
+    return;
+  }
 
   try {
     const response = await fetch("/api/chat", {
@@ -194,36 +322,17 @@ if (leadForm) {
       return;
     }
 
-    const payload = {
-      nome,
-      azienda,
-      email,
-      telefono,
-      interesse: currentIntent || "non_specificato",
-      note,
-    };
-
     try {
-      const response = await fetch("https://formsubmit.co/ajax/contatti@fe-ma.info", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Accept: "application/json",
-        },
-        body: JSON.stringify({
-          nome,
-          azienda,
-          email,
-          telefono,
-          interesse: currentIntent || "non_specificato",
-          note,
-          _subject: "Nuovo lead da chatbot FE.MA. Consulting",
-        }),
+      const { response } = await submitLeadViaFormSubmit({
+        nome,
+        azienda,
+        email,
+        telefono,
+        interesse: currentIntent || "non_specificato",
+        note,
       });
 
-      const data = await response.json();
-
-      if (response.ok && data.success === "true") {
+      if (response.ok) {
         if (leadResponse) {
           leadResponse.textContent =
             "Grazie, la tua richiesta è stata inviata correttamente. Un nostro consulente la esaminerà con attenzione e ti contatteremo nel più breve tempo possibile per un primo riscontro.";
