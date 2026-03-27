@@ -164,3 +164,39 @@ body {
   line-height: 1.5;
   color: #1f2937;
 }
+
+/* FORM CONTATTO */
+.lead-form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f5f7fa;
+  padding: 15px;
+  border-radius: 10px;
+}
+
+.lead-form input,
+.lead-form textarea {
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.lead-form textarea {
+  resize: none;
+  height: 80px;
+}
+
+.lead-form button {
+  background-color: #2f5d8c;
+  color: white;
+  padding: 10px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.lead-form button:hover {
+  background-color: #24496e;
+}
